@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 
 #define CH8_MEM_SIZE 0x1000
 #define CH8_DISP_ROWS 32
@@ -36,21 +37,51 @@
 #define CH8_NN(n) (n & 0xFF)
 #define CH8_NNN(n) (n & 0xFFF)
 
+struct Chip8Quirks {
+  // FX1E may or may not set
+  // Vf if the operation overflows
+  bool _fx1e_set_vf;
+  // Shift operations may or
+  // may set Vx to Vy before
+  // shifting
+  bool _8xy6_8xye_use_vy;
+  // BNNN is actually BXNN for
+  // CHIP-48 and SUPER-CHIP
+  bool _bnnn_is_bxnn;
+  // FX55 and FX65 may or may
+  // not modify the I register
+  bool _fx55_fx65_changes_i;
+};
+
 class Chip8 {
+  // Quirk toggles
+  struct Chip8Quirks quirks;
   // Memory: 4 KiB of RAM
   std::uint8_t mem[CH8_MEM_SIZE];
   // Program counter
   std::uint16_t pc;
   // Index register
   std::uint16_t i;
-  // Stack
-  std::uint16_t stack[CH8_STACK_SIZE];
   // Delay timer
   std::uint8_t delayTimer;
   // Sound timer
   std::uint8_t soundTimer;
   // Registers 0-F
   std::uint8_t reg[CH8_REG_COUNT];
+  // Stack
+  std::uint16_t stack[CH8_STACK_SIZE];
+  // Stack pointer
+  std::uint16_t sp;
+
+  // Push/pop from stack
+  void push(std::uint16_t word);
+  std::uint16_t pop();
+  // Check if key is pressed
+  bool keyPressed(uint8_t key) const;
+
+  // Throw runtime error with system
+  // state and cause as message.
+  void dumpAndAbort(std::string message) const;
 
 public:
   // Display: 64x32 monochrome
