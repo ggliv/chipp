@@ -90,7 +90,11 @@ public:
   // Keypad 0-F
   // T->pressed, F->unpressed
   bool keypad[CH8_KEY_COUNT];
+  // Did the last instruction draw
+  // to the screen buffer?
+  bool justDrew;
 
+  Chip8(Chip8Quirks, const char *);
   Chip8(const char *);
 
   void tick();

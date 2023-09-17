@@ -3,13 +3,7 @@
 #include <sstream>
 #include <vector>
 
-Chip8::Chip8(const char *rom_file_name) {
-  // Set sensible defaults for quirks
-  this->quirks._fx1e_set_vf = false;
-  this->quirks._8xy6_8xye_use_vy = true;
-  this->quirks._bnnn_is_bxnn = false;
-  this->quirks._fx55_fx65_changes_i = false;
-
+Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
   // Initialize state variables
   for (auto& b : this->mem)
     b = 0;
@@ -24,8 +18,8 @@ Chip8::Chip8(const char *rom_file_name) {
     for (auto& item : row)
       item = false;
 
-  for (auto& b : this->keypad)
-      i = false;
+  for (auto& k : this->keypad)
+      k = false;
 
   this->pc = CH8_ENTRY_OFFSET;
 
@@ -33,6 +27,10 @@ Chip8::Chip8(const char *rom_file_name) {
   this->sp         =
   this->delayTimer =
   this->soundTimer = 0;
+
+  this->justDrew = false;
+
+  this->quirks = ch8_quirks;
 
   // Load fontset into memory
   {
@@ -68,6 +66,14 @@ Chip8::Chip8(const char *rom_file_name) {
       // the assumption that it is safe.
       this->mem[offset++] = static_cast<uint8_t>(b);
   }
+}
+
+Chip8::Chip8(const char *rom_file_name) : Chip8::Chip8({}, rom_file_name) {
+  // Set sensible defaults for quirks
+  this->quirks._fx1e_set_vf = false;
+  this->quirks._8xy6_8xye_use_vy = true;
+  this->quirks._bnnn_is_bxnn = false;
+  this->quirks._fx55_fx65_changes_i = false;
 }
 
 inline void Chip8::dumpAndAbort(std::string message) const {
@@ -117,6 +123,8 @@ void Chip8::tick() {
           for (auto& row : this->disp)
             for (auto& item : row)
               item = false;
+
+          this->justDrew = true;
           break;
         }
 
@@ -357,6 +365,8 @@ void Chip8::tick() {
           break;
         }
       }
+
+      this->justDrew = true;
 
       break;
     }
