@@ -22,23 +22,57 @@ Chip8 *c8;
 
 uint8_t getKey(SDL_Scancode sym) {
   switch (sym) {
-    case SDL_SCANCODE_1: { return 0x1;  }
-    case SDL_SCANCODE_2: { return 0x2;  }
-    case SDL_SCANCODE_3: { return 0x3;  }
-    case SDL_SCANCODE_4: { return 0xC;  }
-    case SDL_SCANCODE_Q: { return 0x4;  }
-    case SDL_SCANCODE_W: { return 0x5;  }
-    case SDL_SCANCODE_E: { return 0x6;  }
-    case SDL_SCANCODE_R: { return 0xD;  }
-    case SDL_SCANCODE_A: { return 0x7;  }
-    case SDL_SCANCODE_S: { return 0x8;  }
-    case SDL_SCANCODE_D: { return 0x9;  }
-    case SDL_SCANCODE_F: { return 0xE;  }
-    case SDL_SCANCODE_Z: { return 0xA;  }
-    case SDL_SCANCODE_X: { return 0x0;  }
-    case SDL_SCANCODE_C: { return 0xB;  }
-    case SDL_SCANCODE_V: { return 0xF;  }
-    default:             { return 0x10; }
+  case SDL_SCANCODE_1: {
+    return 0x1;
+  }
+  case SDL_SCANCODE_2: {
+    return 0x2;
+  }
+  case SDL_SCANCODE_3: {
+    return 0x3;
+  }
+  case SDL_SCANCODE_4: {
+    return 0xC;
+  }
+  case SDL_SCANCODE_Q: {
+    return 0x4;
+  }
+  case SDL_SCANCODE_W: {
+    return 0x5;
+  }
+  case SDL_SCANCODE_E: {
+    return 0x6;
+  }
+  case SDL_SCANCODE_R: {
+    return 0xD;
+  }
+  case SDL_SCANCODE_A: {
+    return 0x7;
+  }
+  case SDL_SCANCODE_S: {
+    return 0x8;
+  }
+  case SDL_SCANCODE_D: {
+    return 0x9;
+  }
+  case SDL_SCANCODE_F: {
+    return 0xE;
+  }
+  case SDL_SCANCODE_Z: {
+    return 0xA;
+  }
+  case SDL_SCANCODE_X: {
+    return 0x0;
+  }
+  case SDL_SCANCODE_C: {
+    return 0xB;
+  }
+  case SDL_SCANCODE_V: {
+    return 0xF;
+  }
+  default: {
+    return 0x10;
+  }
   }
 }
 
@@ -51,24 +85,26 @@ static void EMSCRIPTEN_KEEPALIVE mainloop(void) {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
       switch (e.type) {
-        case SDL_QUIT: {
-          exit(0);
-          break;
-        }
+      case SDL_QUIT: {
+        exit(0);
+        break;
+      }
 
-        case SDL_KEYDOWN: {
-          auto key = getKey(e.key.keysym.scancode);
-          if (key > 0xF) break;
-          c8->keypad[key] = true;
+      case SDL_KEYDOWN: {
+        auto key = getKey(e.key.keysym.scancode);
+        if (key > 0xF)
           break;
-        }
+        c8->keypad[key] = true;
+        break;
+      }
 
-        case SDL_KEYUP: {
-          auto key = getKey(e.key.keysym.scancode);
-          if (key > 0xF) break;
-          c8->keypad[key] = false;
+      case SDL_KEYUP: {
+        auto key = getKey(e.key.keysym.scancode);
+        if (key > 0xF)
           break;
-        }
+        c8->keypad[key] = false;
+        break;
+      }
       }
     }
   }
@@ -106,7 +142,9 @@ int EMSCRIPTEN_KEEPALIVE main(int argc, char **argv) {
     exit(1);
   }
 
-  SDL_CreateWindowAndRenderer(CH8_DISP_COLS * DISP_WINDOW_SCALE, CH8_DISP_ROWS * DISP_WINDOW_SCALE, 0, &window, &renderer);
+  SDL_CreateWindowAndRenderer(CH8_DISP_COLS * DISP_WINDOW_SCALE,
+                              CH8_DISP_ROWS * DISP_WINDOW_SCALE, 0, &window,
+                              &renderer);
 
   SDL_SetWindowTitle(window, argv[0]);
 
@@ -117,14 +155,14 @@ int EMSCRIPTEN_KEEPALIVE main(int argc, char **argv) {
 
   // Set up Chip-8
 
-  #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 
   Chip8 realC8("/rom.ch8");
   c8 = &realC8;
 
   emscripten_set_main_loop(mainloop, -1, 1);
 
-  #else
+#else
 
   if (argc == 1) {
     std::cout << "Usage: " << argv[0] << " [rom_file]" << std::endl;
@@ -134,11 +172,12 @@ int EMSCRIPTEN_KEEPALIVE main(int argc, char **argv) {
   Chip8 realC8(argv[1]);
   c8 = &realC8;
 
-  while (true) { mainloop(); }
+  while (true) {
+    mainloop();
+  }
 
-  #endif
+#endif
 }
 #ifdef __EMSCRIPTEN__
 }
 #endif
-
