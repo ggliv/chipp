@@ -40,6 +40,7 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
   }
 
   // Load ROM into memory
+  // TODO emscripten file access broken
   {
     std::ifstream rom(rom_file_name, std::ios::binary);
 
@@ -113,6 +114,8 @@ void Chip8::tick() {
   // Fetch
   uint16_t op = (this->mem[this->pc] << 8) | this->mem[this->pc + 1];
   this->pc += 2;
+
+  this->justDrew = false;
 
   // Decode+execute
   switch (op & 0xF000) {
@@ -197,7 +200,7 @@ void Chip8::tick() {
     }
 
     case 0x8000: {
-      switch (op & 0xF) {
+      switch (op & 0x000F) {
         // 8XY0: Set
         case 0x0000: {
           this->reg[CH8_X(op)] = this->reg[CH8_Y(op)];
@@ -224,29 +227,33 @@ void Chip8::tick() {
 
         // 8XY4: Add
         case 0x0004: {
-          auto res = this->reg[CH8_X(op)] + this->reg[CH8_Y(op)];
+          uint8_t res = this->reg[CH8_X(op)] + this->reg[CH8_Y(op)];
 
-          if (res < this->reg[CH8_X(op)]) {
+          auto shouldFlag = res < this->reg[CH8_X(op)];
+
+          this->reg[CH8_X(op)] = res;
+
+          if (shouldFlag) {
             // overflow
             this->reg[0xF] = 1;
           } else {
             // no overflow
             this->reg[0xF] = 0;
           }
-
-          this->reg[CH8_X(op)] = res;
           break;
         }
 
         // 8XY5: Subtract (Vx = Vy - Vx)
         case 0x0005: {
-          if (this->reg[CH8_X(op)] > this->reg[CH8_Y(op)]) {
+          auto shouldFlag = this->reg[CH8_X(op)] > this->reg[CH8_Y(op)];
+
+          this->reg[CH8_X(op)] -= this->reg[CH8_Y(op)];
+
+          if (shouldFlag) {
             this->reg[0xF] = 1;
           } else {
             this->reg[0xF] = 0;
           }
-
-          this->reg[CH8_X(op)] -= this->reg[CH8_Y(op)];
           break;
         }
 
@@ -266,13 +273,13 @@ void Chip8::tick() {
 
         // 8XY7: Subtract (Vx = Vy - Vx)
         case 0x0007: {
+          this->reg[CH8_X(op)] = this->reg[CH8_Y(op)] - this->reg[CH8_X(op)];
+
           if (this->reg[CH8_Y(op)] > this->reg[CH8_X(op)]) {
             this->reg[0xF] = 1;
           } else {
             this->reg[0xF] = 0;
           }
-
-          this->reg[CH8_X(op)] = this->reg[CH8_Y(op)] - this->reg[CH8_X(op)];
           break;
         }
 
@@ -282,7 +289,8 @@ void Chip8::tick() {
             this->reg[CH8_X(op)] = this->reg[CH8_Y(op)];
           }
 
-          auto shiftBit = (this->reg[CH8_X(op)] >> (sizeof(this->reg[0]) - 1)) & 1;
+          auto shiftBit = (this->reg[CH8_X(op)]
+            >> (sizeof(this->reg[0]) * 8 - 1)) & 1;
 
           this->reg[CH8_X(op)] <<= 1;
 
@@ -297,10 +305,10 @@ void Chip8::tick() {
     }
 
     case 0x9000: {
-      switch (op & 0xF) {
+      switch (op & 0x000F) {
         // 9XY0: Skip if Vx != Vy
         case 0x0000: {
-          if (CH8_X(op) != CH8_Y(op)) {
+          if (this->reg[CH8_X(op)] != this->reg[CH8_Y(op)]) {
             this->pc += 2;
           }
           break;
@@ -372,7 +380,7 @@ void Chip8::tick() {
     }
 
     case 0xE000: {
-      switch (op & 0xFF) {
+      switch (op & 0x00FF) {
         // EX9E: Skip if key pressed
         case 0x009E: {
           if (this->keyPressed(CH8_X(op))) {
@@ -429,9 +437,10 @@ void Chip8::tick() {
         case 0x000A: {
           bool somePressed = false;
           for (uint8_t k = 0; k < sizeof(this->keypad); k++) {
-            if (this->keyPressed(i)) {
+            if (this->keyPressed(k)) {
               somePressed = true;
               this->reg[CH8_X(op)] = k;
+              break;
             }
           }
 

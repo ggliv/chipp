@@ -11,14 +11,36 @@
 #include <iostream>
 
 // R, G, B, A
-#define DISP_ON_COLOR 255, 255, 255, 255
-#define DISP_OFF_COLOR 0, 0, 0, 0
+#define DISP_ON_COLOR 0xFF, 0xCC, 0x00, 0xFF
+#define DISP_OFF_COLOR 0x99, 0x66, 0x00, 255
 
 #define DISP_WINDOW_SCALE 8
 
 SDL_Window *window;
 SDL_Renderer *renderer;
 Chip8 *c8;
+
+uint8_t getKey(SDL_Scancode sym) {
+  switch (sym) {
+    case SDL_SCANCODE_1: { return 0x1;  }
+    case SDL_SCANCODE_2: { return 0x2;  }
+    case SDL_SCANCODE_3: { return 0x3;  }
+    case SDL_SCANCODE_4: { return 0xC;  }
+    case SDL_SCANCODE_Q: { return 0x4;  }
+    case SDL_SCANCODE_W: { return 0x5;  }
+    case SDL_SCANCODE_E: { return 0x6;  }
+    case SDL_SCANCODE_R: { return 0xD;  }
+    case SDL_SCANCODE_A: { return 0x7;  }
+    case SDL_SCANCODE_S: { return 0x8;  }
+    case SDL_SCANCODE_D: { return 0x9;  }
+    case SDL_SCANCODE_F: { return 0xE;  }
+    case SDL_SCANCODE_Z: { return 0xA;  }
+    case SDL_SCANCODE_X: { return 0x0;  }
+    case SDL_SCANCODE_C: { return 0xB;  }
+    case SDL_SCANCODE_V: { return 0xF;  }
+    default:             { return 0x10; }
+  }
+}
 
 #ifdef __EMSCRIPTEN__
 extern "C" {
@@ -29,9 +51,24 @@ static void EMSCRIPTEN_KEEPALIVE mainloop(void) {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
       switch (e.type) {
-        case SDL_QUIT:
+        case SDL_QUIT: {
           exit(0);
           break;
+        }
+
+        case SDL_KEYDOWN: {
+          auto key = getKey(e.key.keysym.scancode);
+          if (key > 0xF) break;
+          c8->keypad[key] = true;
+          break;
+        }
+
+        case SDL_KEYUP: {
+          auto key = getKey(e.key.keysym.scancode);
+          if (key > 0xF) break;
+          c8->keypad[key] = false;
+          break;
+        }
       }
     }
   }
@@ -43,9 +80,9 @@ static void EMSCRIPTEN_KEEPALIVE mainloop(void) {
     for (auto i = 0; i < CH8_DISP_ROWS; i++) {
       for (auto j = 0; j < CH8_DISP_COLS; j++) {
         if (c8->disp[i][j]) {
-          SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+          SDL_SetRenderDrawColor(renderer, DISP_ON_COLOR);
         } else {
-          SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+          SDL_SetRenderDrawColor(renderer, DISP_OFF_COLOR);
         }
 
         SDL_RenderDrawPoint(renderer, j, i);
