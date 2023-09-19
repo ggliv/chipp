@@ -68,10 +68,11 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
 
 Chip8::Chip8(const char *rom_file_name) : Chip8::Chip8({}, rom_file_name) {
   // Set sensible defaults for quirks
+  this->quirks._8xy1_8xy2_8xy3_reset_vf = true;
+  this->quirks._fx55_fx65_changes_i = true;
   this->quirks._fx1e_set_vf = false;
   this->quirks._8xy6_8xye_use_vy = true;
-  this->quirks._bnnn_is_bxnn = false;
-  this->quirks._fx55_fx65_changes_i = false;
+  this->quirks._bnnn_is_bxnn = true;
 }
 
 inline void Chip8::dumpAndAbort(std::string message) const {
@@ -215,18 +216,27 @@ void Chip8::tick() {
     // 8XY1: Binary OR
     case 0x0001: {
       this->reg[CH8_X(op)] |= this->reg[CH8_Y(op)];
+      if (this->quirks._8xy1_8xy2_8xy3_reset_vf) {
+        this->reg[0xF] = 0;
+      }
       break;
     }
 
     // 8XY2: Binary AND
     case 0x0002: {
       this->reg[CH8_X(op)] &= this->reg[CH8_Y(op)];
+      if (this->quirks._8xy1_8xy2_8xy3_reset_vf) {
+        this->reg[0xF] = 0;
+      }
       break;
     }
 
-    // 8XY3: Binary AND
+    // 8XY3: Binary XOR
     case 0x0003: {
       this->reg[CH8_X(op)] ^= this->reg[CH8_Y(op)];
+      if (this->quirks._8xy1_8xy2_8xy3_reset_vf) {
+        this->reg[0xF] = 0;
+      }
       break;
     }
 

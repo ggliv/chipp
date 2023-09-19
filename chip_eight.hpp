@@ -39,6 +39,12 @@
 #define CH8_NNN(n) (n & 0xFFF)
 
 struct Chip8Quirks {
+  // AND/OR/XOR ops may or may not
+  // reset the flags register to zero
+  bool _8xy1_8xy2_8xy3_reset_vf;
+  // FX55 and FX65 may or may
+  // not modify the I register
+  bool _fx55_fx65_changes_i;
   // FX1E may or may not set
   // Vf if the operation overflows
   bool _fx1e_set_vf;
@@ -49,9 +55,6 @@ struct Chip8Quirks {
   // BNNN is actually BXNN for
   // CHIP-48 and SUPER-CHIP
   bool _bnnn_is_bxnn;
-  // FX55 and FX65 may or may
-  // not modify the I register
-  bool _fx55_fx65_changes_i;
 };
 
 class Chip8 {
