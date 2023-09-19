@@ -108,6 +108,11 @@ inline bool Chip8::keyPressed(uint8_t key) const {
   return key < sizeof(this->keypad) && this->keypad[key];
 }
 
+void Chip8::decTimers() {
+  this->delayTimer--;
+  this->soundTimer--;
+}
+
 void Chip8::tick() {
   // Fetch
   uint16_t op = (this->mem[this->pc] << 8) | this->mem[this->pc + 1];

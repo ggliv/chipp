@@ -16,6 +16,8 @@
 
 #define DISP_WINDOW_SCALE 8
 
+#define OPS_PER_SEC 540
+
 SDL_Window *window;
 SDL_Renderer *renderer;
 Chip8 *c8;
@@ -126,6 +128,14 @@ static void EMSCRIPTEN_KEEPALIVE mainloop(void) {
     }
 
     SDL_RenderPresent(renderer);
+  }
+
+  // Decrement timers, sleep
+  static auto opsSinceLastSec = 0;
+  if (++opsSinceLastSec >= OPS_PER_SEC) {
+    opsSinceLastSec = 0;
+    c8->decTimers();
+    // SDL_Delay(1000);
   }
 }
 #ifdef __EMSCRIPTEN__

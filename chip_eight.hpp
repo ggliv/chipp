@@ -94,6 +94,8 @@ public:
   // Did the last instruction draw
   // to the screen buffer?
   bool justDrew;
+  // Decrement the timers
+  void decTimers();
 
   Chip8(Chip8Quirks, const char *);
   Chip8(const char *);
