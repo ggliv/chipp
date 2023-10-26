@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <string>
+#include <chrono>
 
 #define CH8_MEM_SIZE 0x1000
 #define CH8_DISP_ROWS 32
@@ -60,6 +61,8 @@ struct Chip8Quirks {
 class Chip8 {
   // Quirk toggles
   struct Chip8Quirks quirks;
+  // Last timer decrement time
+  std::chrono::time_point<std::chrono::steady_clock> lastTimerDec;
   // Memory: 4 KiB of RAM
   std::uint8_t mem[CH8_MEM_SIZE];
   // Program counter
@@ -81,7 +84,7 @@ class Chip8 {
   void push(std::uint16_t word);
   std::uint16_t pop();
   // Check if key is pressed
-  bool keyPressed(uint8_t key) const;
+  bool keyPressed(std::uint8_t key) const;
 
   // Throw runtime error with system
   // state and cause as message.
@@ -97,11 +100,11 @@ public:
   // Did the last instruction draw
   // to the screen buffer?
   bool justDrew;
-  // Decrement the timers
-  void decTimers();
 
   Chip8(Chip8Quirks, const char *);
   Chip8(const char *);
 
+  // Fetch, decode, and execute the
+  // next opcode.
   void tick();
 };

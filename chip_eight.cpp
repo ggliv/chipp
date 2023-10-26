@@ -3,9 +3,12 @@
 #include <optional>
 #include <sstream>
 #include <vector>
+#include <chrono>
 
 Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
-  // Initialize state variables
+  // initialize state variables
+  this->lastTimerDec = std::chrono::steady_clock::now();
+
   for (auto &b : this->mem)
     b = 0;
 
@@ -30,14 +33,14 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
 
   this->quirks = ch8_quirks;
 
-  // Load fontset into memory
+  // load fontset into memory
   {
     auto offset = CH8_FONT_OFFSET;
     for (auto c : CH8_FONT)
       this->mem[offset++] = c;
   }
 
-  // Load ROM into memory
+  // load rom into memory
   // TODO emscripten file access broken
   {
     std::ifstream rom(rom_file_name, std::ios::binary);
@@ -58,7 +61,7 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
 
     auto offset = CH8_ENTRY_OFFSET;
     for (auto &b : bytes)
-      // note that this is technically UB, as char
+      // note that this is technically ub, as char
       // is not guaranteed to be either unsigned or
       // eight bits wide. we're using it anyways on
       // the assumption that it is safe.
@@ -67,7 +70,7 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
 }
 
 Chip8::Chip8(const char *rom_file_name) : Chip8::Chip8({}, rom_file_name) {
-  // Set sensible defaults for quirks
+  // set sensible defaults for quirks
   this->quirks._8xy1_8xy2_8xy3_reset_vf = true;
   this->quirks._fx55_fx65_changes_i = true;
   this->quirks._fx1e_set_vf = false;
@@ -109,12 +112,19 @@ inline bool Chip8::keyPressed(uint8_t key) const {
   return key < sizeof(this->keypad) && this->keypad[key];
 }
 
-void Chip8::decTimers() {
-  this->delayTimer--;
-  this->soundTimer--;
-}
-
 void Chip8::tick() {
+  // Timers
+  auto timeDiff = std::chrono::steady_clock::now() - this->lastTimerDec;
+  if (std::chrono::duration_cast<std::chrono::microseconds>(timeDiff).count() >= 16667) {
+    if (this->delayTimer > 0) {
+      this->delayTimer--;
+    }
+    if (this->soundTimer > 0) {
+      this->soundTimer--;
+    }
+    this->lastTimerDec += timeDiff;
+  }
+
   // Fetch
   uint16_t op = (this->mem[this->pc] << 8) | this->mem[this->pc + 1];
   this->pc += 2;
