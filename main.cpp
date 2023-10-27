@@ -111,22 +111,20 @@ static void EMSCRIPTEN_KEEPALIVE mainloop(void) {
 
   c8->tick();
 
-  // Render any new updates
-  if (c8->justDrew) {
-    for (auto i = 0; i < CH8_DISP_ROWS; i++) {
-      for (auto j = 0; j < CH8_DISP_COLS; j++) {
-        if (c8->disp[i][j]) {
-          SDL_SetRenderDrawColor(renderer, DISP_ON_COLOR);
-        } else {
-          SDL_SetRenderDrawColor(renderer, DISP_OFF_COLOR);
-        }
-
-        SDL_RenderDrawPoint(renderer, j, i);
+  // Render screen
+  for (auto i = 0; i < CH8_DISP_ROWS; i++) {
+    for (auto j = 0; j < CH8_DISP_COLS; j++) {
+      if (c8->disp[i][j]) {
+        SDL_SetRenderDrawColor(renderer, DISP_ON_COLOR);
+      } else {
+        SDL_SetRenderDrawColor(renderer, DISP_OFF_COLOR);
       }
-    }
 
-    SDL_RenderPresent(renderer);
+      SDL_RenderDrawPoint(renderer, j, i);
+    }
   }
+
+  SDL_RenderPresent(renderer);
 }
 #ifdef __EMSCRIPTEN__
 }
@@ -169,7 +167,7 @@ int EMSCRIPTEN_KEEPALIVE main(int argc, char **argv) {
     exit(1);
   }
 
-  Chip8 realC8(argv[1]);
+  Chip8 realC8(argv[1], 500);
   c8 = &realC8;
 
   while (true) {

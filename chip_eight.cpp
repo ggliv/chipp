@@ -1,12 +1,14 @@
 #include "chip_eight.hpp"
+#include <chrono>
+#include <thread>
 #include <fstream>
 #include <optional>
 #include <sstream>
 #include <vector>
-#include <chrono>
 
-Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
+Chip8::Chip8(Chip8Quirks quirks, const char *romPath, uintmax_t instrHz) {
   // initialize state variables
+  this->instrHz = instrHz;
   this->lastTimerDec = std::chrono::steady_clock::now();
 
   for (auto &b : this->mem)
@@ -29,9 +31,7 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
 
   this->i = this->sp = this->delayTimer = this->soundTimer = 0;
 
-  this->justDrew = false;
-
-  this->quirks = ch8_quirks;
+  this->quirks = quirks;
 
   // load fontset into memory
   {
@@ -43,11 +43,11 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
   // load rom into memory
   // TODO emscripten file access broken
   {
-    std::ifstream rom(rom_file_name, std::ios::binary);
+    std::ifstream rom(romPath, std::ios::binary);
 
     if (!rom) {
       std::string message = "Error reading ROM file: ";
-      throw std::runtime_error(message.append(rom_file_name));
+      throw std::runtime_error(message.append(romPath));
     }
 
     std::vector<char> bytes((std::istreambuf_iterator<char>(rom)),
@@ -69,7 +69,8 @@ Chip8::Chip8(Chip8Quirks ch8_quirks, const char *rom_file_name) {
   }
 }
 
-Chip8::Chip8(const char *rom_file_name) : Chip8::Chip8({}, rom_file_name) {
+Chip8::Chip8(const char *romPath, uintmax_t instrHz)
+    : Chip8::Chip8({}, romPath, instrHz) {
   // set sensible defaults for quirks
   this->quirks._8xy1_8xy2_8xy3_reset_vf = true;
   this->quirks._fx55_fx65_changes_i = true;
@@ -114,8 +115,14 @@ inline bool Chip8::keyPressed(uint8_t key) const {
 
 void Chip8::tick() {
   // Timers
+  // Run the number of cycles in one frame
+  for (uintmax_t i = 0; i < (this->instrHz / 60); i++) {
+    this->doCycle();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(16));
   auto timeDiff = std::chrono::steady_clock::now() - this->lastTimerDec;
-  if (std::chrono::duration_cast<std::chrono::microseconds>(timeDiff).count() >= 16667) {
+  if (std::chrono::duration_cast<std::chrono::microseconds>(timeDiff).count() >=
+      16667) {
     if (this->delayTimer > 0) {
       this->delayTimer--;
     }
@@ -123,13 +130,12 @@ void Chip8::tick() {
       this->soundTimer--;
     }
     this->lastTimerDec += timeDiff;
-  }
+  }}
 
+void Chip8::doCycle() {
   // Fetch
   uint16_t op = (this->mem[this->pc] << 8) | this->mem[this->pc + 1];
   this->pc += 2;
-
-  this->justDrew = false;
 
   // Decode+execute
   switch (op & 0xF000) {
@@ -141,7 +147,6 @@ void Chip8::tick() {
         for (auto &item : row)
           item = false;
 
-      this->justDrew = true;
       break;
     }
 
@@ -402,8 +407,6 @@ void Chip8::tick() {
         break;
       }
     }
-
-    this->justDrew = true;
 
     break;
   }

@@ -79,6 +79,8 @@ class Chip8 {
   std::uint16_t stack[CH8_STACK_SIZE];
   // Stack pointer
   std::uint16_t sp;
+  // Number of instructions run per second
+  std::uintmax_t instrHz;
 
   // Push/pop from stack
   void push(std::uint16_t word);
@@ -90,6 +92,9 @@ class Chip8 {
   // state and cause as message.
   void dumpAndAbort(std::string message) const;
 
+  // Run a single cycle
+  void doCycle();
+
 public:
   // Display: 64x32 monochrome
   // T->white, F->black
@@ -97,12 +102,9 @@ public:
   // Keypad 0-F
   // T->pressed, F->unpressed
   bool keypad[CH8_KEY_COUNT];
-  // Did the last instruction draw
-  // to the screen buffer?
-  bool justDrew;
 
-  Chip8(Chip8Quirks, const char *);
-  Chip8(const char *);
+  Chip8(Chip8Quirks quirks, const char *romPath, uintmax_t instrHz);
+  Chip8(const char *romPath, uintmax_t instrHz);
 
   // Fetch, decode, and execute the
   // next opcode.
